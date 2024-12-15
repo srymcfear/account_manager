@@ -1,5 +1,8 @@
 # account_manager
- Lưu tài khoản và mật khẩu dưới dạng mã hoá  vào PC .
+Link tải : https://github.com/srymcfear/account_manager/releases/download/account_manager/Account.Manager.FEAR.exe
+
+
+Lưu tài khoản và mật khẩu dưới dạng mã hoá  vào PC .
 
  Tài khoản và mật khẩu được mã hoá và lưu tại "C:\Users\ {username} \AppData\Local\fear\accounts.json"
  
