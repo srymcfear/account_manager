@@ -1,167 +1,191 @@
-import os
-import customtkinter as ctk
 import json
-import base64
-import requests
 import pyperclip
-from cryptography.fernet import Fernet
+import customtkinter as ctk
 from tkinter import messagebox
+import os
+import sys
+import ctypes
+import requests
+from zipfile import ZipFile
+from io import BytesIO
 from icecream import ic
-import base64
+
+ic.disable()        ## debug
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+def create_folder_if_not_exists(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+def download_and_extract_zip(url, destination_folder):
+    response = requests.get(url)
+    zip_file = ZipFile(BytesIO(response.content))
+
+    zip_file.extractall(destination_folder)
+    zip_file.close()
 
 
-# ic.disable()        ## debug
+def create_folder_update():
+    try:
+        appdata_local_path = os.path.join(os.getenv('LOCALAPPDATA'), 'FEAR')
+        github_url = 'https://github.com/srymcfear/verify_me/releases/download/config/config.zip'
+
+        create_folder_if_not_exists(appdata_local_path)
+
+        if not os.listdir(appdata_local_path):
+            ic("Downloading Updated Files...")
+            download_and_extract_zip(github_url, appdata_local_path)
+            ic("Done! Thank You For Using",)
+            sys.exit()
+        else:
+            pass
+    except Exception as e:
+        ic(str(e))
+        print("Error Downloading Updated Files, Make Sure To Open As Admin & Try Again!")
+        sys.exit()
+
 
 ############################################## CLASS CHECK UPDATE
 THIS_VERSION = "1.2.1"
+def checkcode():
+    current_version = THIS_VERSION 
+    url = 'https://raw.githubusercontent.com/srymcfear/verify_me/refs/heads/main/version/version.json'     
+    response = requests.get(url)                    # CHECK FILE JSON 
+    if response.status_code == 200:
+        file_data = response.json()                 # Tải nội dung file JSON
+        if "account_manager-ver" and "account_manager-key" in file_data:
+            latest_version = file_data['account_manager-ver']
+            key_real = file_data['account_manager-key']
+            if key_real == 'active':
+                ic(key_real)
+                if latest_version > current_version:
+                    ic('Vui lòng cập nhật phiên bản mới!',current_version)
+                    messagebox.showwarning("Cảnh báo",'Vui lòng cập nhật phiên bản mới! \nPhiên bản mới:' + latest_version)
+                else:
+                    ic('Chưa có bản update',{latest_version})
+                    # messagebox.showwarning("Cảnh báo",'FEAR - Auto_Keyboard: Key hợp lệ')
+                    main()  #run 
+                    return
+            else:
+                ic('Key không đúng',key_real)
+                messagebox.showwarning("Cảnh báo",'App đang tạm khoá. \nLiên hệ discord: discord.gg/ZbwFeuea6U')
 
-fix_string = "ZGVmIGNoZWNrY29kZSgpOgogICAgY3VycmVudF92ZXJzaW9uID0gVEhJU19WRVJTSU9OIAogICAgdXJsID0gJ2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9zcnltY2ZlYXIvdmVyaWZ5X21lL3JlZnMvaGVhZHMvbWFpbi92ZXJzaW9uL3ZlcnNpb24uanNvbicgICAgIAogICAgcmVzcG9uc2UgPSByZXF1ZXN0cy5nZXQodXJsKSAgICAgICAgICAgICAgICAgICAgIyBDSEVDSyBGSUxFIEpTT04gCiAgICBpZiByZXNwb25zZS5zdGF0dXNfY29kZSA9PSAyMDA6CiAgICAgICAgZmlsZV9kYXRhID0gcmVzcG9uc2UuanNvbigpICAgICAgICAgICAgICAgICAjIFThuqNpIG7hu5lpIGR1bmcgZmlsZSBKU09OCiAgICAgICAgaWYgImFjY291bnRfbWFuYWdlci12ZXIiIGFuZCAiYWNjb3VudF9tYW5hZ2VyLWtleSIgaW4gZmlsZV9kYXRhOgogICAgICAgICAgICBsYXRlc3RfdmVyc2lvbiA9IGZpbGVfZGF0YVsnYWNjb3VudF9tYW5hZ2VyLXZlciddCiAgICAgICAgICAgIGtleV9yZWFsID0gZmlsZV9kYXRhWydhY2NvdW50X21hbmFnZXIta2V5J10KICAgICAgICAgICAgaWYga2V5X3JlYWwgPT0gJ2FjdGl2ZSc6CiAgICAgICAgICAgICAgICBpYyhrZXlfcmVhbCkKICAgICAgICAgICAgICAgIGlmIGxhdGVzdF92ZXJzaW9uID4gY3VycmVudF92ZXJzaW9uOgogICAgICAgICAgICAgICAgICAgIGljKCdWdWkgbMOybmcgY+G6rXAgbmjhuq10IHBoacOqbiBi4bqjbiBt4bubaSEnLGN1cnJlbnRfdmVyc2lvbikKICAgICAgICAgICAgICAgICAgICBzaG93X3BvcHVwKCdWdWkgbMOybmcgY+G6rXAgbmjhuq10IHBoacOqbiBi4bqjbiBt4bubaSEgXG5QaGnDqm4gYuG6o24gbeG7m2k6JyArIGxhdGVzdF92ZXJzaW9uKQogICAgICAgICAgICAgICAgZWxzZToKICAgICAgICAgICAgICAgICAgICBpYygnQ2jGsGEgY8OzIGLhuqNuIHVwZGF0ZScse2xhdGVzdF92ZXJzaW9ufSkKICAgICAgICAgICAgICAgICAgICAjIHNob3dfcG9wdXAoJ0ZFQVIgLSBBdXRvX0tleWJvYXJkOiBLZXkgaOG7o3AgbOG7hycpCiAgICAgICAgICAgICAgICAgICAgbWFpbigpICAjcnVuIAogICAgICAgICAgICAgICAgICAgIHJldHVybgogICAgICAgICAgICBlbHNlOgogICAgICAgICAgICAgICAgaWMoJ0tleSBraMO0bmcgxJHDum5nJyxrZXlfcmVhbCkKICAgICAgICAgICAgICAgIHNob3dfcG9wdXAoJ0FwcCDEkWFuZyB04bqhbSBraG/DoS4gXG5MacOqbiBo4buHIGRpc2NvcmQ6IGRpc2NvcmQuZ2cvWmJ3RmV1ZWE2VScpCgogICAgICAgIGVsc2U6CiAgICAgICAgICAgIGljKCJM4buXaSBwaGnDqm4gYuG6o24uIExpw6puIGjhu4cgZGlzY29yZCDEkeG7gyBjw7MgYuG6o24gbeG7m2kgLiBkaXNjb3JkLmdnL1pid0ZldWVhNlUiKQogICAgICAgICAgICBzaG93X3BvcHVwKCJM4buXaSBwaGnDqm4gYuG6o24uIExpw6puIGjhu4cgZGlzY29yZCDEkeG7gyBjw7MgYuG6o24gbeG7m2kgLiBkaXNjb3JkLmdnL1pid0ZldWVhNlUiKQogICAgZWxzZToKICAgICAgICBzaG93X3BvcHVwKCJM4buXaSBraGkgY2hlY2trZXkuIE3DoyBs4buXaToiLCB7cmVzcG9uc2Uuc3RhdHVzX2NvZGV9KQogICAgICAgIGljKCJM4buXaSBraGkgY2hlY2trZXkuIE3DoyBs4buXaToiLCB7cmVzcG9uc2Uuc3RhdHVzX2NvZGV9KQ=="
+        else:
+            ic("Lỗi phiên bản. Liên hệ discord để có bản mới . discord.gg/ZbwFeuea6U")
+            messagebox.showwarning("Cảnh báo","Lỗi phiên bản. Liên hệ discord để có bản mới . discord.gg/ZbwFeuea6U")
+    else:
+        messagebox.showwarning("Cảnh báo",f"Lỗi khi checkkey. Mã lỗi: {response.status_code}")
+        ic("Lỗi khi checkkey. Mã lỗi:", {response.status_code})
 
-### thongbao
-def show_popup(text_danhap):
-    entered_text = text_danhap  # Lấy văn bản từ trường nhập liệu
-    messagebox.showinfo("FEAR - SEVMEK", f"FEAR - Sevmek: {entered_text}")  # Hiển thị popup với thông tin
 
 ############################################## CLASS CHECK UPDATE - END ###################################################
 
+
+# Đường dẫn đến thư mục chứa file JSON
 appdata_folder = os.path.join(os.getenv('LOCALAPPDATA'), 'FEAR')
+# appdata_folder = os.path.join(os.getenv('APPDATA'), 'Local', 'Fear')
 if not os.path.exists(appdata_folder):
-    os.makedirs(appdata_folder)  # Tạo thư mục nếu chưa tồn tại
+    os.makedirs(appdata_folder)
 
-# Định nghĩa các đường dẫn tệp JSON
-accounts_file = os.path.join(appdata_folder, 'accounts.json')
-account_types_file = os.path.join(appdata_folder, 'account_types.json')
+accounts_file = os.path.join(appdata_folder, "accounts.json")
+account_types_file = os.path.join(appdata_folder, "account_types.json")
 
-# Hàm tạo khóa mã hóa
-def generate_key():
-    return Fernet.generate_key()
-
-# Hàm mã hóa mật khẩu
-def encrypt_password(password, key):
-    fernet = Fernet(key)
-    encrypted_password = fernet.encrypt(password.encode())
-    return encrypted_password
-
-# Hàm giải mã mật khẩu
-def decrypt_password(encrypted_password, key):
-    fernet = Fernet(key)
-    decrypted_password = fernet.decrypt(encrypted_password).decode()
-    return decrypted_password
-
-# Chuyển đổi dữ liệu kiểu bytes thành base64 để lưu vào JSON
-def encode_bytes_to_base64(byte_data):
-    return base64.b64encode(byte_data).decode('utf-8')
-
-# Chuyển đổi dữ liệu base64 trở lại thành bytes
-def decode_base64_to_bytes(base64_data):
-    return base64.b64decode(base64_data.encode('utf-8'))
-
-# Lưu thông tin tài khoản và mật khẩu vào file JSON
-def save_account(account, password, account_type, filename=accounts_file):
-# def save_account(account, password, account_type, filename='accounts.json'):
+# Hàm lưu tài khoản
+def save_account(account, password, account_type):
     try:
-        with open(filename, 'r') as f:
-            accounts = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        accounts = {}
+        # Đọc dữ liệu từ file accounts.json
+        if os.path.exists(accounts_file):
+            with open(accounts_file, 'r') as f:
+                accounts = json.load(f)
+        else:
+            accounts = {}
 
-    # Mã hóa mật khẩu trước khi lưu
-    key = generate_key()  # Mỗi tài khoản có thể có một khóa mã hóa riêng
-    encrypted_password = encrypt_password(password, key)
-    
-    # Mã hóa base64 cho mật khẩu và khóa trước khi lưu vào JSON
-    account_data = {
-        'password': encode_bytes_to_base64(encrypted_password),
-        'key': encode_bytes_to_base64(key),  # Lưu trữ khóa mã hóa dưới dạng chuỗi base64
-        'account_type': account_type  # Lưu loại tài khoản
-    }
-
-    # Nếu tài khoản đã có trong dữ liệu, thêm loại tài khoản mới vào danh sách
-    if account in accounts:
-        accounts[account].append(account_data)
-    else:
-        accounts[account] = [account_data]
-    
-    # Lưu lại vào file
-    with open(filename, 'w') as f:
-        json.dump(accounts, f, indent=4)
-    messagebox.showinfo("Thành công", f"Tài khoản {account} đã được lưu thành công!")
-
-# Lấy thông tin tài khoản và mật khẩu từ file JSON
-def get_account(account, password, account_type, filename=accounts_file):
-# def get_account(account, account_type, filename='accounts.json'):
-    try:
-        with open(filename, 'r') as f:
-            accounts = json.load(f)
-        
         if account not in accounts:
-            messagebox.showerror("Lỗi", "Tài khoản không tồn tại!")
-            return None
-        
-        account_info = accounts[account]
-        
-        # Tìm thông tin tài khoản với loại tài khoản tương ứng
-        for item in account_info:
-            if item['account_type'] == account_type:
-                encrypted_password_base64 = item['password']
-                key_base64 = item['key']
-                
-                # Giải mã base64 thành bytes
-                encrypted_password = decode_base64_to_bytes(encrypted_password_base64)
-                key = decode_base64_to_bytes(key_base64)
-                
-                # Giải mã mật khẩu
-                password = decrypt_password(encrypted_password, key)
-                
-                # Trả lại mật khẩu nguyên bản
-                return password
-        
-        messagebox.showinfo("Lỗi", f"Không tìm thấy loại tài khoản '{account_type}' cho tài khoản '{account}'!")
+            accounts[account] = []
+
+        # Kiểm tra xem tài khoản đã tồn tại chưa, nếu chưa thì thêm
+        accounts[account].append({
+            'password': password,
+            'account_type': account_type
+        })
+
+        # Lưu lại dữ liệu vào file accounts.json
+        with open(accounts_file, 'w') as f:
+            json.dump(accounts, f, indent=4)
+
+        messagebox.showinfo("Thông báo", "Tài khoản đã được lưu thành công!")
+
+    except Exception as e:
+        messagebox.showerror("Lỗi", f"Đã xảy ra lỗi khi lưu tài khoản: {str(e)}")
+
+# Hàm lấy mật khẩu dựa trên tài khoản và loại tài khoản
+def get_account(account, account_type):
+    try:
+        if os.path.exists(accounts_file):
+            with open(accounts_file, 'r') as f:
+                accounts = json.load(f)
+
+            if account in accounts:
+                for item in accounts[account]:
+                    if item['account_type'] == account_type:
+                        return item['password']
+        return None
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+# Hàm hiển thị danh sách tài khoản cùng loại tài khoản đã lưu
+def show_accounts_by_type_gui(account_type_var):
+    account_type = account_type_var.get()  # Lấy loại tài khoản từ menu
+    if not account_type:
+        show_thongbao("Vui lòng chọn loại tài khoản!")
+        messagebox.showwarning("Cảnh báo", "Vui lòng chọn loại tài khoản!")
+        return
+
+    try:
+        if os.path.exists(accounts_file):
+            with open(accounts_file, 'r') as f:
+                accounts = json.load(f)
+
+            # Lọc ra tất cả các tài khoản có loại tương ứng
+            accounts_with_type = []
+            for account, account_info in accounts.items():
+                for item in account_info:
+                    if item['account_type'] == account_type:
+                        accounts_with_type.append(account)
+
+            if accounts_with_type:
+                messagebox.showinfo("Danh sách tài khoản", f"Các tài khoản có loại '{account_type}':\n" + "\n".join(set(accounts_with_type)))
+            else:
+                messagebox.showinfo("Không có tài khoản", f"Không có tài khoản nào với loại '{account_type}'!")
+
+        else:
+            messagebox.showerror("Lỗi", "Không có dữ liệu tài khoản nào!")
     except (FileNotFoundError, json.JSONDecodeError):
         messagebox.showerror("Lỗi", "Không có dữ liệu tài khoản nào!")
 
-# Lưu các loại tài khoản vào file JSON
-def save_account_types(account_types, filename=account_types_file):
-    try:
-        with open(filename, 'w') as f:
-            json.dump(account_types, f, indent=4)
-        messagebox.showinfo("Thành công", "Các loại tài khoản đã được lưu thành công!")
-    except Exception as e:
-        messagebox.showerror("Lỗi", f"Đã xảy ra lỗi khi lưu loại tài khoản: {e}")
-
-# Lấy các loại tài khoản từ file JSON
-def load_account_types(filename=account_types_file):
-    try:
-        with open(filename, 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-    # Hàm kiểm tra xem ký tự có phải là dấu câu trong tiếng Việt hay không
-def is_valid_char(char):
-    # Danh sách các dấu câu trong tiếng Việt
-    viet_diacritics = "áàảãạâấầẩẫậéêèẻẽẹíìỉĩịóòỏõọốồổỗộúùủũụ"
-    viet_diacritics += "ưừửữựôồổỗộơờởỡợđ"
-    return char not in viet_diacritics
-
-# Hàm validate cho CTkEntry
-def validate_input(char, value):
-    # Kiểm tra nếu ký tự mới không phải dấu câu thì cho phép nhập
-    if is_valid_char(char):
-        return True
-    return False
-
-
-# Tạo giao diện người dùng
+# Cập nhật giao diện người dùng
 def create_gui():
     ctk.set_appearance_mode("Dark")  # Cài đặt chế độ giao diện
     ctk.set_default_color_theme("blue")  # Cài đặt màu chủ đề
 
     window = ctk.CTk()
     window.title("Quản lý Tài khoản và Mật khẩu")
-    window.geometry("350x410")
+    window.geometry("350x460")
     window.resizable(False, False)
     
+    config_folder = os.path.join(os.getenv('LOCALAPPDATA'), 'FEAR')
+    icon_path = os.path.join(config_folder, "fear_logo.ico")
+    if os.path.exists(icon_path):
+        window.iconbitmap(icon_path)
+    else:
+        ic(f"Không tìm thấy biểu tượng tại {icon_path}")
+
+
     # Tiêu đề ở đầu cửa sổ
     label_top = ctk.CTkLabel(window, text="FEAR", font=("Game Of Squids", 50))
     label_top.grid(row=0, column=0, columnspan=2, padx=10, pady=5)
@@ -171,8 +195,6 @@ def create_gui():
     
     notify_label = ctk.CTkLabel(window, text="", font=("Arial", 10), text_color="red")
     notify_label.grid(row=2, column=0,columnspan=2, padx=20, pady=2)
-
-
 
     # Gắn sự kiện validate cho entry
     vcmd = (window.register(validate_input), '%S', '%P')  # %S là ký tự mới, %P là toàn bộ giá trị của entry
@@ -205,12 +227,10 @@ def create_gui():
     # Tạo menu trỏ xuống để chọn loại tài khoản
     account_type_menu = ctk.CTkOptionMenu(window, variable=account_type_var, values=account_types)
     account_type_menu.grid(row=5, column=1, padx=10, pady=10)
-    
 
     ### thongbao
     def show_thongbao(text_danhap):
         notify_label.configure(text=f"{text_danhap}")
-        # messagebox.showinfo("FEAR - SEVMEK", f"FEAR - AutoKeyboard: {text_danhap}")  # Hiển thị popup với thông tin
 
     # Hàm lưu tài khoản
     def save_account_gui():
@@ -224,77 +244,30 @@ def create_gui():
             save_account(account, password, account_type)
 
     # Hàm lấy mật khẩu dựa trên tài khoản và loại tài khoản
+# Hàm lấy mật khẩu dựa trên tài khoản và loại tài khoản
     def get_account_gui():
         account = account_entry.get()
-        account_type = account_type_var.get()
+        account_type = account_type_var.get()  # Lấy loại tài khoản từ menu
         if not account or not account_type:
             show_thongbao("Hãy nhập tên tài khoản & chọn loại tài khoản!")
             messagebox.showwarning("Cảnh báo", "Vui lòng nhập tên tài khoản và chọn loại tài khoản!")
-        else:
-            password = get_account(account, account_type)
-            if password:
-                messagebox.showinfo("Mật khẩu", f"Mật khẩu của tài khoản '{account}' với loại '{account_type}' là: {password}")
-                # Sao chép mật khẩu nguyên bản vào clipboard
-                pyperclip.copy(password)
-                show_thongbao("Mật khẩu đã được sao chép vào clipboard!")
-                # messagebox.showinfo("Sao chép thành công", "Mật khẩu đã được sao chép vào clipboard!")
-
-    # Hàm hiển thị danh sách loại tài khoản có cùng tên tài khoản
-    def show_account_types_gui():
-        account = account_entry.get()
-        if not account:
-            show_thongbao("Vui lòng nhập tên tài khoản!")
-            # messagebox.showwarning("Cảnh báo", "Vui lòng nhập tên tài khoản!")
             return
 
-        try:
-            # with open('accounts.json', 'r') as f:
-            with open(accounts_file, 'r') as f:
-                accounts = json.load(f)
+        password = get_account(account, account_type)
+        
+        if password:
+            messagebox.showinfo("Mật khẩu", f"Mật khẩu của tài khoản '{account}' với loại '{account_type}' là: {password}")
+            # Sao chép mật khẩu nguyên bản vào clipboard
+            pyperclip.copy(password)
+            show_thongbao("Mật khẩu đã được sao chép vào clipboard!")
+        else:
+            # Nếu không tìm thấy mật khẩu, hiển thị cảnh báo
+            messagebox.showwarning("Cảnh báo", f"Không tìm thấy mật khẩu cho tài khoản '{account}' với loại '{account_type}'!")
+            show_thongbao(f"Không tìm thấy mật khẩu cho tài khoản '{account}' với loại '{account_type}'!")
 
-            if account not in accounts:
-                show_thongbao(f"Tài khoản '{account}' không tồn tại!")
-                messagebox.showerror("Lỗi", f"Tài khoản '{account}' không tồn tại!")
-                return
-
-            account_info = accounts[account]
-            account_types_list = [item['account_type'] for item in account_info]
-            if account_types_list:
-                messagebox.showinfo("Danh sách loại tài khoản", f"Loại tài khoản của '{account}':\n" + "\n".join(account_types_list))
-            else:
-                messagebox.showinfo("Không có loại tài khoản", f"Không có loại tài khoản nào cho tài khoản '{account}'!")
-        except (FileNotFoundError, json.JSONDecodeError):
-            messagebox.showerror("Lỗi", "Không có dữ liệu tài khoản nào!")
-
-    # Tạo cửa sổ Cài đặt loại tài khoản
-    def open_settings_window():
-        settings_window = ctk.CTkToplevel(window)
-        settings_window.title("Cài đặt Loại Tài Khoản")
-
-        new_account_type_label = ctk.CTkLabel(settings_window, text="Nhập loại tài khoản mới:")
-        new_account_type_label.grid(row=0, column=0, padx=10, pady=10)
-        new_account_type_entry = ctk.CTkEntry(settings_window, width=180)
-        new_account_type_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        def add_account_type():
-            new_type = new_account_type_entry.get()
-            if new_type:
-                account_types = load_account_types()
-                if new_type not in account_types:
-                    account_types.append(new_type)
-                    save_account_types(account_types)
-                    # Cập nhật lại menu trỏ xuống với loại tài khoản mới
-                    account_type_var.set(new_type)
-                    account_type_menu.configure(values=account_types)
-                    messagebox.showinfo("Thành công", f"Loại tài khoản '{new_type}' đã được thêm!")
-                else:
-                    messagebox.showwarning("Cảnh báo", "Loại tài khoản này đã tồn tại!")
-            else:
-                messagebox.showwarning("Cảnh báo", "Vui lòng nhập loại tài khoản!")
-
-        # Thêm nút để lưu loại tài khoản mới
-        add_button = ctk.CTkButton(settings_window, text="Thêm loại tài khoản", command=add_account_type)
-        add_button.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
+    # Thêm nút để hiển thị tài khoản cùng loại
+    show_accounts_button = ctk.CTkButton(window, text="Danh sách tài khoản của Loại tài khoản này", command=lambda: show_accounts_by_type_gui(account_type_var))
+    show_accounts_button.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
 
     # Tạo các nút
     save_button = ctk.CTkButton(window, text="Lưu tài khoản", command=save_account_gui, hover_color="green")
@@ -303,19 +276,84 @@ def create_gui():
     get_button = ctk.CTkButton(window, text="Lấy mật khẩu", command=get_account_gui, hover_color="green")
     get_button.grid(row=6, column=1, padx=20, pady=10)
 
-    show_types_button = ctk.CTkButton(window, text="Hiển thị loại tài khoản", command=show_account_types_gui)
-    show_types_button.grid(row=7, column=0, columnspan=1, padx=10, pady=10)
-
-    settings_button = ctk.CTkButton(window, text="Cài đặt loại tài khoản", command=open_settings_window, hover_color="pink")
-    settings_button.grid(row=7, column=1, columnspan=2, padx=20, pady=10)
+    settings_button = ctk.CTkButton(window, text="Cài đặt loại tài khoản", command=lambda: open_settings_window(account_type_var, account_type_menu), hover_color="pink")
+    settings_button.grid(row=8, column=0, columnspan=2, padx=10, pady=10)
 
     window.mainloop()
 
+# Hàm tải danh sách loại tài khoản (giả sử đã lưu trong một file JSON)
+def load_account_types():
+    try:
+        if os.path.exists(account_types_file):
+            with open(account_types_file, "r") as f:
+                account_types = json.load(f)
+                return account_types
+        else:
+            return []
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+# Hàm xử lý để validate input cho các entry (nếu cần thiết)
+def validate_input(char, value):
+    return True
+
+# Hàm mở cửa sổ cài đặt loại tài khoản
+def open_settings_window(account_type_var, account_type_menu):
+    settings_window = ctk.CTkToplevel()
+    settings_window.title("Thêm loại tài khoản")
+    settings_window.geometry("400x110")
+    settings_window.resizable(False, False)
+
+    config_folder = os.path.join(os.getenv('LOCALAPPDATA'), 'FEAR')
+    icon_path = os.path.join(config_folder, "fear_logo.ico")
+    if os.path.exists(icon_path):
+        settings_window.iconbitmap(icon_path)
+    else:
+        ic(f"Không tìm thấy biểu tượng tại {icon_path}")
+    
+    # Nhãn và ô nhập liệu cho loại tài khoản mới
+    new_account_type_label = ctk.CTkLabel(settings_window, text="Nhập loại tài khoản mới:")
+    new_account_type_label.grid(row=0, column=0, padx=10, pady=10)
+    
+    new_account_type_entry = ctk.CTkEntry(settings_window, width=200)
+    new_account_type_entry.grid(row=0, column=1, padx=10, pady=10)
+    
+    # Hàm thêm loại tài khoản mới
+    def add_new_account_type():
+        new_account_type = new_account_type_entry.get().strip()
+        if new_account_type:
+            account_types = load_account_types()
+            if new_account_type not in account_types:
+                account_types.append(new_account_type)
+                with open(account_types_file, 'w') as f:
+                    json.dump(account_types, f, indent=4)
+                
+                # Cập nhật lại menu loại tài khoản
+                account_type_menu.configure(values=account_types)
+                account_type_var.set(new_account_type)  # Đặt giá trị mặc định mới
+                messagebox.showinfo("Thông báo", "Loại tài khoản mới đã được thêm thành công!")
+                # settings_window.destroy()  # Đóng cửa sổ cài đặt
+            else:
+                messagebox.showwarning("Cảnh báo", "Loại tài khoản này đã tồn tại!")
+        else:
+            messagebox.showwarning("Cảnh báo", "Vui lòng nhập tên loại tài khoản!")
+    
+    add_button = ctk.CTkButton(settings_window, text="Thêm loại tài khoản", command=add_new_account_type)
+    add_button.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
+
+
 
 def main():
-    # Gọi hàm tạo GUI
-    create_gui()
+    if not is_admin():
+        ic('not admin')
+        messagebox.showwarning("Cảnh báo",'Vui lòng chạy bằng quyền Admin')
+        return True
+    try:
+        create_folder_update()
+        create_gui()
+    except Exception as e:
+        ic(str(e))
     
 if __name__ == "__main__":
-    exec(base64.b64decode(fix_string).decode('utf-8'))
+    # main()
     checkcode()
