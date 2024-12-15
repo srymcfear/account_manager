@@ -5,7 +5,9 @@ from tkinter import messagebox
 import os
 import sys
 import ctypes
+import base64
 import requests
+from cryptography.fernet import Fernet
 from zipfile import ZipFile
 from io import BytesIO
 from icecream import ic
@@ -49,6 +51,18 @@ def create_folder_update():
         print("Error Downloading Updated Files, Make Sure To Open As Admin & Try Again!")
         sys.exit()
 
+def create_version_file():
+    version_info = {
+        "version": "1.0.0",
+        "build": "20241215"
+    }
+
+    version_file_path = os.path.join(os.getenv('LOCALAPPDATA'), 'FEAR', 'version.json')
+    
+    if not os.path.exists(version_file_path):
+        with open(version_file_path, 'w') as version_file:
+            json.dump(version_info, version_file, indent=4)
+
 
 ############################################## CLASS CHECK UPDATE
 THIS_VERSION = "1.2.1"
@@ -88,14 +102,40 @@ def checkcode():
 
 # Đường dẫn đến thư mục chứa file JSON
 appdata_folder = os.path.join(os.getenv('LOCALAPPDATA'), 'FEAR')
-# appdata_folder = os.path.join(os.getenv('APPDATA'), 'Local', 'Fear')
+KEY_FILE = os.path.join(os.getenv('LOCALAPPDATA'), 'FEAR', 'secret.key')
 if not os.path.exists(appdata_folder):
     os.makedirs(appdata_folder)
 
 accounts_file = os.path.join(appdata_folder, "accounts.json")
 account_types_file = os.path.join(appdata_folder, "account_types.json")
 
+########## ma hoa key ##########
+# Tạo khóa mã hóa Fernet (nếu chưa có)
+def load_or_generate_key():
+    if os.path.exists(KEY_FILE):
+        with open(KEY_FILE, 'rb') as key_file:
+            key = key_file.read()
+    else:
+        key = Fernet.generate_key()
+        with open(KEY_FILE, 'wb') as key_file:
+            key_file.write(key)
+    return key
+
+# Tạo một đối tượng Fernet với khóa đã tải
+key = load_or_generate_key()
+cipher = Fernet(key)
+
+# Hàm mã hóa mật khẩu
+def encrypt_password(password):
+    return cipher.encrypt(password.encode()).decode()
+
+# Hàm giải mã mật khẩu
+def decrypt_password(encrypted_password):
+    return cipher.decrypt(encrypted_password.encode()).decode()
+########## ma hoa key - end ##########
+
 # Hàm lưu tài khoản
+
 def save_account(account, password, account_type):
     try:
         # Đọc dữ liệu từ file accounts.json
@@ -108,9 +148,11 @@ def save_account(account, password, account_type):
         if account not in accounts:
             accounts[account] = []
 
-        # Kiểm tra xem tài khoản đã tồn tại chưa, nếu chưa thì thêm
+        # Mã hóa mật khẩu trước khi lưu
+        encrypted_password = encrypt_password(password)
+
         accounts[account].append({
-            'password': password,
+            'password': encrypted_password,
             'account_type': account_type
         })
 
@@ -123,7 +165,6 @@ def save_account(account, password, account_type):
     except Exception as e:
         messagebox.showerror("Lỗi", f"Đã xảy ra lỗi khi lưu tài khoản: {str(e)}")
 
-# Hàm lấy mật khẩu dựa trên tài khoản và loại tài khoản
 def get_account(account, account_type):
     try:
         if os.path.exists(accounts_file):
@@ -133,7 +174,8 @@ def get_account(account, account_type):
             if account in accounts:
                 for item in accounts[account]:
                     if item['account_type'] == account_type:
-                        return item['password']
+                        # Giải mã mật khẩu
+                        return decrypt_password(item['password'])
         return None
     except (FileNotFoundError, json.JSONDecodeError):
         return None
@@ -356,4 +398,5 @@ def main():
     
 if __name__ == "__main__":
     # main()
+    create_version_file()
     checkcode()
