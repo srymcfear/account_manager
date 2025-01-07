@@ -25,11 +25,10 @@ def decrypt_password(encrypted_password, key):
 def encode_bytes_to_base64(byte_data):
     return base64.b64encode(byte_data).decode('utf-8')
 
-# Chuyển đổi dữ liệu base64 trở lại thành bytes
 def decode_base64_to_bytes(base64_data):
     return base64.b64decode(base64_data.encode('utf-8'))
 
-# Lưu thông tin tài khoản và mật khẩu vào file JSON
+
 def save_account(account, password, filename='accounts.json'):
     try:
         with open(filename, 'r') as f:
@@ -46,13 +45,10 @@ def save_account(account, password, filename='accounts.json'):
         'password': encode_bytes_to_base64(encrypted_password),
         'key': encode_bytes_to_base64(key)  # Lưu trữ khóa mã hóa dưới dạng chuỗi base64
     }
-    
-    # Lưu lại vào file
     with open(filename, 'w') as f:
         json.dump(accounts, f, indent=4)
     messagebox.showinfo("Thành công", f"Tài khoản {account} đã được lưu thành công!")
 
-# Lấy thông tin tài khoản và mật khẩu từ file JSON
 def get_account(account, filename='accounts.json'):
     try:
         with open(filename, 'r') as f:
@@ -69,10 +65,7 @@ def get_account(account, filename='accounts.json'):
         encrypted_password = decode_base64_to_bytes(encrypted_password_base64)
         key = decode_base64_to_bytes(key_base64)
         
-        # Giải mã mật khẩu
         password = decrypt_password(encrypted_password, key)
-        
-        # Hiển thị mật khẩu trong một hộp thoại thông báo
         messagebox.showinfo("Thông tin tài khoản", f"Tài khoản: {account}\nMật khẩu: {password}")
         
         # Sao chép mật khẩu vào clipboard
