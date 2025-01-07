@@ -5,23 +5,18 @@ import base64
 import pyperclip  # Thư viện sao chép vào clipboard
 from cryptography.fernet import Fernet
 
-# Hàm tạo khóa mã hóa
 def generate_key():
     return Fernet.generate_key()
-
-# Hàm mã hóa mật khẩu
 def encrypt_password(password, key):
     fernet = Fernet(key)
     encrypted_password = fernet.encrypt(password.encode())
     return encrypted_password
 
-# Hàm giải mã mật khẩu
 def decrypt_password(encrypted_password, key):
     fernet = Fernet(key)
     decrypted_password = fernet.decrypt(encrypted_password).decode()
     return decrypted_password
 
-# Chuyển đổi dữ liệu kiểu bytes thành base64 để lưu vào JSON
 def encode_bytes_to_base64(byte_data):
     return base64.b64encode(byte_data).decode('utf-8')
 
@@ -36,11 +31,8 @@ def save_account(account, password, filename='accounts.json'):
     except (FileNotFoundError, json.JSONDecodeError):
         accounts = {}
 
-    # Mã hóa mật khẩu trước khi lưu
     key = generate_key()  # Mỗi tài khoản có thể có một khóa mã hóa riêng
     encrypted_password = encrypt_password(password, key)
-    
-    # Mã hóa base64 cho mật khẩu và khóa trước khi lưu vào JSON
     accounts[account] = {
         'password': encode_bytes_to_base64(encrypted_password),
         'key': encode_bytes_to_base64(key)  # Lưu trữ khóa mã hóa dưới dạng chuỗi base64
@@ -60,11 +52,8 @@ def get_account(account, filename='accounts.json'):
         
         encrypted_password_base64 = accounts[account]['password']
         key_base64 = accounts[account]['key']
-        
-        # Giải mã base64 thành bytes
         encrypted_password = decode_base64_to_bytes(encrypted_password_base64)
         key = decode_base64_to_bytes(key_base64)
-        
         password = decrypt_password(encrypted_password, key)
         messagebox.showinfo("Thông tin tài khoản", f"Tài khoản: {account}\nMật khẩu: {password}")
         
